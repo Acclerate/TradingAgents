@@ -153,6 +153,20 @@ MODEL_OPTIONS: ProviderModeOptions = {
     # so the two provider keys share one model list.
     "minimax": _MINIMAX_MODELS,
     "minimax-cn": _MINIMAX_MODELS,
+    # SiliconFlow: Chinese inference platform hosting open-source models.
+    "siliconflow": {
+        "quick": [
+            ("DeepSeek-V4-Flash - Fast, cost-efficient", "deepseek-ai/DeepSeek-V4-Flash"),
+            ("Qwen3-8B - Lightweight", "Qwen/Qwen3-8B"),
+            ("Custom model ID", "custom"),
+        ],
+        "deep": [
+            ("DeepSeek-V4-Flash - Fast, cost-efficient", "deepseek-ai/DeepSeek-V4-Flash"),
+            ("DeepSeek-R1-0528 - Reasoning model", "deepseek-ai/DeepSeek-R1-0528"),
+            ("Qwen3-235B-A22B - Large MoE", "Qwen/Qwen3-235B-A22B"),
+            ("Custom model ID", "custom"),
+        ],
+    },
     # OpenRouter: fetched dynamically. Azure: any deployed model name.
     # Ollama display labels intentionally omit a "local" marker — the
     # endpoint is now configurable via OLLAMA_BASE_URL, so the same labels

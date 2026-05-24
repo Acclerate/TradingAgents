@@ -153,7 +153,8 @@ _PROVIDER_BASE_URL = {
     "qwen":       "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     "qwen-cn":    "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "glm":        "https://api.z.ai/api/paas/v4/",
-    "glm-cn":     "https://open.bigmodel.cn/api/paas/v4/",
+    "glm-cn":     "https://open.bigmodel.cn/api/coding/paas/v4",
+    "siliconflow": "https://api.siliconflow.cn",
     "minimax":    "https://api.minimax.io/v1",
     "minimax-cn": "https://api.minimaxi.com/v1",
     "openrouter": "https://openrouter.ai/api/v1",
@@ -228,8 +229,9 @@ class OpenAIClient(BaseLLMClient):
                 llm_kwargs[key] = self.kwargs[key]
 
         # Native OpenAI: use Responses API for consistent behavior across
-        # all model families. Third-party providers use Chat Completions.
-        if self.provider == "openai":
+        # all model families. Third-party providers and custom base_url
+        # (e.g. SiliconFlow) use Chat Completions.
+        if self.provider == "openai" and not self.base_url:
             llm_kwargs["use_responses_api"] = True
 
         # Provider-specific quirks live in their own subclasses so the

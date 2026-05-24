@@ -93,10 +93,10 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # Data vendor configuration
     # Category-level configuration (default for all tools in category)
     "data_vendors": {
-        "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance
-        "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance
-        "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance
-        "news_data": "yfinance",             # Options: alpha_vantage, yfinance
+        "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance, akshare
+        "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance, akshare
+        "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance, akshare
+        "news_data": "yfinance",             # Options: alpha_vantage, yfinance, akshare
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {
@@ -117,6 +117,16 @@ DEFAULT_CONFIG = _apply_env_overrides({
         ".L":   "^FTSE",    # London (FTSE 100)
         ".TO":  "^GSPTSE",  # Toronto (TSX Composite)
         ".AX":  "^AXJO",    # Australia (ASX 200)
+        ".SS":  "000300.SS",# Shanghai (CSI 300)
+        ".SZ":  "000300.SS",# Shenzhen (CSI 300)
         "":     "SPY",      # default for US-listed tickers (no suffix)
     },
+    # A-stock specific macro news queries (used by akshare global news vendor)
+    "a_stock_global_news_queries": [
+        "央行 降准 利率 货币政策",
+        "GDP CPI PPI 经济数据",
+        "A股 沪深300 北向资金",
+        "证监会 产业政策 监管",
+        "新能源 半导体 人工智能",
+    ],
 })

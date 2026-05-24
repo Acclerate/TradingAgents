@@ -268,6 +268,7 @@ def select_llm_provider() -> tuple[str, str | None]:
     # (display_name, provider_key, base_url)
     PROVIDERS = [
         ("OpenAI", "openai", "https://api.openai.com/v1"),
+        ("SiliconFlow", "siliconflow", "https://api.siliconflow.cn"),
         ("Google", "google", None),
         ("Anthropic", "anthropic", "https://api.anthropic.com/"),
         ("xAI", "xai", "https://api.x.ai/v1"),
@@ -379,7 +380,7 @@ def ask_glm_region() -> tuple[str, str]:
             ),
             questionary.Choice(
                 "BigModel — open.bigmodel.cn (China, uses ZHIPU_CN_API_KEY)",
-                value=("glm-cn", "https://open.bigmodel.cn/api/paas/v4/"),
+                value=("glm-cn", "https://open.bigmodel.cn/api/coding/paas/v4"),
             ),
         ],
         style=questionary.Style([

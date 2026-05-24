@@ -38,16 +38,31 @@ def get_language_instruction() -> str:
 
 def build_instrument_context(ticker: str, asset_type: str = "stock") -> str:
     """Describe the exact instrument so agents preserve exchange-qualified tickers."""
+    from tradingagents.dataflows.ticker_utils import is_a_stock_ticker, normalize_a_stock_ticker
+
     instrument_label = "asset" if asset_type == "crypto" else "instrument"
-    extra_hint = (
-        " Treat it as a crypto asset rather than a company, and do not assume company fundamentals are available."
-        if asset_type == "crypto"
-        else ""
-    )
+    extra_hint = ""
+
+    if asset_type == "crypto":
+        extra_hint = " Treat it as a crypto asset rather than a company, and do not assume company fundamentals are available."
+    elif is_a_stock_ticker(ticker):
+        code = normalize_a_stock_ticker(ticker)
+        price_limit = "20%" if code.startswith(("30", "688")) else "10%"
+        board = "创业板 (ChiNext)" if code.startswith("30") else "科创板 (STAR)" if code.startswith("688") else "主板 (Main Board)"
+        extra_hint = (
+            f" This is a Chinese A-stock on the {board}. Key market rules:\n"
+            f" - T+1 settlement: shares bought today cannot be sold until the next trading day.\n"
+            f" - Price limit: {price_limit} daily price movement limit.\n"
+            f" - Lot size: minimum trade unit is 100 shares.\n"
+            f" - Currency: CNY (Chinese Yuan).\n"
+            f" - Trading hours: 09:30-11:30 and 13:00-15:00 Beijing time (UTC+8), Monday-Friday.\n"
+            f"Use this exact ticker in every tool call."
+        )
+
     return (
         f"The {instrument_label} to analyze is `{ticker}`. "
         "Use this exact ticker in every tool call, report, and recommendation, "
-        "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`, `-USD`)."
+        "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`, `.SS`, `.SZ`, `-USD`)."
         + extra_hint
     )
 

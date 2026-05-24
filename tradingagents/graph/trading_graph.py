@@ -196,17 +196,23 @@ class TradingAgentsGraph:
 
         ``config["benchmark_ticker"]`` overrides everything when set; otherwise
         the suffix map matches the ticker's exchange suffix (e.g. ``.T`` for
-        Tokyo). US-listed tickers without a dotted suffix fall through to the
-        empty-suffix entry (SPY by default). Unrecognised suffixes (including
-        US tickers with dots like ``BRK.B``) also fall back to the empty-suffix
-        entry, which is the right default because the alpha calculation works
-        in USD.
+        Tokyo). A-stock bare numeric codes (6 digits, no suffix) are detected
+        and mapped to CSI 300. US-listed tickers without a dotted suffix fall
+        through to the empty-suffix entry (SPY by default).
         """
         explicit = self.config.get("benchmark_ticker")
         if explicit:
             return explicit
+
+        from tradingagents.dataflows.ticker_utils import is_a_stock_ticker, a_stock_yfinance_suffix
         benchmark_map = self.config.get("benchmark_map", {})
         ticker_upper = ticker.upper()
+
+        # Detect bare A-stock numeric codes (e.g. "600519") → use .SS/.SZ suffix
+        if is_a_stock_ticker(ticker_upper):
+            suffix = a_stock_yfinance_suffix(ticker_upper)
+            return benchmark_map.get(suffix, "000300.SS")
+
         for suffix, benchmark in benchmark_map.items():
             if suffix and ticker_upper.endswith(suffix.upper()):
                 return benchmark
