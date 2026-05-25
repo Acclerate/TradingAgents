@@ -228,6 +228,11 @@ class OpenAIClient(BaseLLMClient):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
+        # Default timeout for third-party providers (5 min per request) so
+        # a hung API connection doesn't block the entire analysis pipeline.
+        if "timeout" not in llm_kwargs and self.provider != "openai":
+            llm_kwargs["timeout"] = 3000
+
         # Native OpenAI: use Responses API for consistent behavior across
         # all model families. Third-party providers and custom base_url
         # (e.g. SiliconFlow) use Chat Completions.

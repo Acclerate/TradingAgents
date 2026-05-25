@@ -17,6 +17,12 @@ _ENV_OVERRIDES = {
     "TRADINGAGENTS_MAX_RISK_ROUNDS":      "max_risk_discuss_rounds",
     "TRADINGAGENTS_CHECKPOINT_ENABLED":   "checkpoint_enabled",
     "TRADINGAGENTS_BENCHMARK_TICKER":     "benchmark_ticker",
+    # Per-model provider overrides — when set, deep/quick use their own
+    # provider + URL instead of the shared llm_provider / backend_url.
+    "TRADINGAGENTS_DEEP_PROVIDER":        "deep_provider",
+    "TRADINGAGENTS_QUICK_PROVIDER":       "quick_provider",
+    "TRADINGAGENTS_DEEP_BACKEND_URL":     "deep_backend_url",
+    "TRADINGAGENTS_QUICK_BACKEND_URL":    "quick_backend_url",
 }
 
 
@@ -60,6 +66,14 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # provider-specific URL here would leak (e.g. OpenAI's /v1 was previously
     # being forwarded to Gemini, producing malformed request URLs).
     "backend_url": None,
+    # Per-model provider overrides (None = fall back to shared settings above).
+    # Set these to route deep/quick to different providers, e.g.:
+    #   deep_provider = "glm-cn"       deep_backend_url = "https://open.bigmodel.cn/api/coding/paas/v4"
+    #   quick_provider = "siliconflow"  quick_backend_url = "https://api.siliconflow.cn"
+    "deep_provider": None,
+    "quick_provider": None,
+    "deep_backend_url": None,
+    "quick_backend_url": None,
     # Provider-specific thinking configuration
     "google_thinking_level": None,      # "high", "minimal", etc.
     "openai_reasoning_effort": None,    # "medium", "high", "low"

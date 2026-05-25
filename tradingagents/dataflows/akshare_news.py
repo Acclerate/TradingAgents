@@ -2,6 +2,16 @@
 
 Provides ``get_news_akshare`` (per-ticker) and ``get_global_news_akshare``
 (macro / market-wide) compatible with the VENDOR_METHODS interface.
+
+Data sources (per-ticker news):
+  1. 东方财富 (East Money) via AKShare — stock_news_em
+  2. 新浪财经 (Sina Finance) via direct HTTP — finance.sina.com.cn
+  3. 同花顺 (THS) via AKShare — stock_news_sh
+
+Global/macro news:
+  1. CCTV 财经新闻 via AKShare
+  2. 东方财富 沪深300 news
+  3. 新浪财经 macro headlines
 """
 
 import logging
@@ -10,71 +20,140 @@ from typing import Optional
 
 import akshare as ak
 import pandas as pd
+import requests
 
 from .ticker_utils import normalize_a_stock_ticker
 
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Per-ticker news — Source 1: East Money via AKShare
+# ---------------------------------------------------------------------------
+def _news_eastmoney(code: str, limit: int = 20) -> list:
+    """Fetch per-ticker news from 东方财富 via AKShare."""
+    items = []
+    try:
+        df = ak.stock_news_em(symbol=code)
+        if df is None or df.empty:
+            return items
+        title_col = next((c for c in df.columns if "标题" in str(c) or "title" in str(c).lower()), None)
+        content_col = next((c for c in df.columns if "内容" in str(c) or "content" in str(c).lower()), None)
+        source_col = next((c for c in df.columns if "来源" in str(c) or "source" in str(c).lower()), None)
+        date_col = next((c for c in df.columns if "时间" in str(c) or "日期" in str(c) or "date" in str(c).lower()), None)
+
+        for _, row in df.head(limit).iterrows():
+            parts = []
+            if title_col and pd.notna(row.get(title_col)):
+                parts.append(f"Title: {row[title_col]}")
+            if content_col and pd.notna(row.get(content_col)):
+                parts.append(f"Content: {str(row[content_col])[:500]}")
+            if source_col and pd.notna(row.get(source_col)):
+                parts.append(f"Source: {row[source_col]}")
+            if date_col and pd.notna(row.get(date_col)):
+                parts.append(f"Date: {row[date_col]}")
+            if parts:
+                items.append(("[东方财富]", "\n".join(parts)))
+    except Exception as exc:
+        logger.debug("EM news failed for %s: %s", code, exc)
+    return items
+
+
+# ---------------------------------------------------------------------------
+# Per-ticker news — Source 2: Sina Finance via HTTP
+# ---------------------------------------------------------------------------
+def _news_sina(code: str, limit: int = 15) -> list:
+    """Fetch per-ticker news from 新浪财经 via HTTP API."""
+    items = []
+    try:
+        # Sina stock news API
+        url = f"https://vip.stock.finance.sina.com.cn/corp/go.php/vCB_AllNewsStock/symbol/{code}.phtml"
+        resp = requests.get(url, timeout=10, headers={
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://finance.sina.com.cn",
+        })
+        resp.encoding = "gbk"
+        import re
+        # Parse news titles from HTML
+        titles = re.findall(r'<a[^>]*href="([^"]*)"[^>]*>([^<]{10,})</a>', resp.text)
+        for href, title in titles[:limit]:
+            title = title.strip()
+            if len(title) > 5:
+                items.append(("[新浪财经]", f"Title: {title}\nURL: {href}"))
+    except Exception as exc:
+        logger.debug("Sina news failed for %s: %s", code, exc)
+    return items
+
+
+# ---------------------------------------------------------------------------
+# Per-ticker news — Source 3: THS via AKShare
+# ---------------------------------------------------------------------------
+def _news_ths(code: str, limit: int = 10) -> list:
+    """Fetch per-ticker news from 同花顺 via AKShare."""
+    items = []
+    try:
+        df = ak.stock_news_sh(symbol=code)
+        if df is None or df.empty:
+            return items
+        title_col = next((c for c in df.columns if "标题" in str(c) or "title" in str(c).lower() or "新闻标题" in str(c)), None)
+        content_col = next((c for c in df.columns if "内容" in str(c) or "content" in str(c).lower() or "新闻内容" in str(c)), None)
+        date_col = next((c for c in df.columns if "时间" in str(c) or "date" in str(c).lower() or "发布时间" in str(c)), None)
+
+        for _, row in df.head(limit).iterrows():
+            parts = []
+            if title_col and pd.notna(row.get(title_col)):
+                parts.append(f"Title: {row[title_col]}")
+            if content_col and pd.notna(row.get(content_col)):
+                parts.append(f"Content: {str(row[content_col])[:500]}")
+            if date_col and pd.notna(row.get(date_col)):
+                parts.append(f"Date: {row[date_col]}")
+            if parts:
+                items.append(("[同花顺]", "\n".join(parts)))
+    except Exception as exc:
+        logger.debug("THS news failed for %s: %s", code, exc)
+    return items
+
+
 def get_news_akshare(
     ticker: str, start_date: str, end_date: str
 ) -> str:
-    """Fetch stock-specific news from 东方财富 via AKShare."""
+    """Fetch stock-specific news from multiple sources (EM → Sina → THS)."""
     code = normalize_a_stock_ticker(ticker)
-    try:
-        df = ak.stock_news_em(symbol=code)
-    except Exception as exc:
-        return f"Error fetching news for {ticker} via AKShare: {exc}"
 
-    if df is None or df.empty:
+    all_items = []
+    # Source 1: East Money
+    all_items.extend(_news_eastmoney(code))
+    # Source 2: Sina Finance
+    all_items.extend(_news_sina(code))
+    # Source 3: THS
+    all_items.extend(_news_ths(code))
+
+    if not all_items:
         return f"No news found for A-stock '{ticker}'"
 
-    # Filter by date range if date column exists
-    date_col = None
-    for c in df.columns:
-        if "时间" in str(c) or "日期" in str(c) or "date" in str(c).lower():
-            date_col = c
-            break
+    # Filter by date range if possible
+    filtered = []
+    start_dt = pd.to_datetime(start_date)
+    end_dt = pd.to_datetime(end_date)
+    for source_tag, text in all_items:
+        # Simple date filter: check if any date-like string falls in range
+        import re
+        dates_found = re.findall(r"20\d{2}[-/]\d{2}[-/]\d{2}", text)
+        if dates_found:
+            try:
+                d = pd.to_datetime(dates_found[0])
+                if start_dt <= d <= end_dt:
+                    filtered.append((source_tag, text))
+                    continue
+            except Exception:
+                pass
+        # If no date found or out of range, include anyway (recent news)
+        filtered.append((source_tag, text))
 
-    if date_col:
-        df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-        start_dt = pd.to_datetime(start_date)
-        end_dt = pd.to_datetime(end_date)
-        df = df[(df[date_col] >= start_dt) & (df[date_col] <= end_dt)]
-
-    # Format output
-    lines = []
-    title_col = None
-    content_col = None
-    source_col = None
-    for c in df.columns:
-        if "标题" in str(c) or "title" in str(c).lower():
-            title_col = c
-        elif "内容" in str(c) or "content" in str(c).lower():
-            content_col = c
-        elif "来源" in str(c) or "source" in str(c).lower():
-            source_col = c
-
-    for _, row in df.head(20).iterrows():
-        parts = []
-        if title_col and pd.notna(row.get(title_col)):
-            parts.append(f"Title: {row[title_col]}")
-        if content_col and pd.notna(row.get(content_col)):
-            content = str(row[content_col])[:500]
-            parts.append(f"Content: {content}")
-        if source_col and pd.notna(row.get(source_col)):
-            parts.append(f"Source: {row[source_col]}")
-        if date_col and pd.notna(row.get(date_col)):
-            parts.append(f"Date: {row[date_col]}")
-        if parts:
-            lines.append("\n".join(parts))
-
-    if not lines:
-        # Fallback: dump raw CSV
-        return f"# News for {ticker}\n\n" + df.to_csv(index=False)
+    lines = [f"{source_tag}\n{text}" for source_tag, text in filtered[:25]]
 
     header = f"# News for {ticker} from {start_date} to {end_date}\n"
-    header += f"# Total articles: {len(lines)}\n\n"
+    header += f"# Total articles: {len(lines)} (from {len(set(s for s,_ in all_items))} sources)\n\n"
     return header + "\n\n---\n\n".join(lines)
 
 
@@ -123,6 +202,25 @@ def get_global_news_akshare(
                     all_items.append(f"[市场新闻] {title}\n{content}")
         except Exception as exc:
             logger.warning("Market news fetch failed: %s", exc)
+
+    # --- Sina Finance macro headlines ---
+    if len(all_items) < limit:
+        try:
+            url = "https://feed.mix.sina.com.cn/api/roll/get"
+            params = {
+                "pageid": "153", "lid": "2516", "num": limit,
+                "versionNumber": "1.2.4",
+            }
+            resp = requests.get(url, params=params, timeout=10)
+            j = resp.json()
+            data = j.get("result", {}).get("data", [])
+            for item in data[:limit - len(all_items)]:
+                title = item.get("title", "")
+                ctime = item.get("ctime", "")
+                if title:
+                    all_items.append(f"[新浪财经] {ctime} - {title}")
+        except Exception as exc:
+            logger.debug("Sina macro news failed: %s", exc)
 
     if not all_items:
         return f"No macro news available for A-stock market around {curr_date}"

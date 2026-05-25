@@ -36,7 +36,8 @@ from tradingagents.agents.utils.agent_utils import (
     get_income_statement,
     get_news,
     get_insider_transactions,
-    get_global_news
+    get_global_news,
+    get_fund_flow,
 )
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
@@ -83,16 +84,23 @@ class TradingAgentsGraph:
         if self.callbacks:
             llm_kwargs["callbacks"] = self.callbacks
 
+        # Per-model provider: when deep_provider/quick_provider are set, they
+        # override the shared llm_provider and backend_url for that model.
+        deep_provider = self.config.get("deep_provider") or self.config["llm_provider"]
+        deep_base_url = self.config.get("deep_backend_url") or self.config.get("backend_url")
+        quick_provider = self.config.get("quick_provider") or self.config["llm_provider"]
+        quick_base_url = self.config.get("quick_backend_url") or self.config.get("backend_url")
+
         deep_client = create_llm_client(
-            provider=self.config["llm_provider"],
+            provider=deep_provider,
             model=self.config["deep_think_llm"],
-            base_url=self.config.get("backend_url"),
+            base_url=deep_base_url,
             **llm_kwargs,
         )
         quick_client = create_llm_client(
-            provider=self.config["llm_provider"],
+            provider=quick_provider,
             model=self.config["quick_think_llm"],
-            base_url=self.config.get("backend_url"),
+            base_url=quick_base_url,
             **llm_kwargs,
         )
 
@@ -178,6 +186,8 @@ class TradingAgentsGraph:
                     get_news,
                     get_global_news,
                     get_insider_transactions,
+                    # Fund flow (资金流向) — capital flow analysis
+                    get_fund_flow,
                 ]
             ),
             "fundamentals": ToolNode(

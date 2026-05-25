@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 import datetime
 import typer
@@ -554,6 +555,46 @@ def get_user_selections():
     )
     selected_research_depth = select_research_depth()
 
+    # Dual-provider detection: when both quick_provider and deep_provider
+    # are set via env vars, skip interactive Steps 6-8 entirely. The .env
+    # values control provider, model, and URL for each tier independently.
+    _quick_provider_env = os.environ.get("TRADINGAGENTS_QUICK_PROVIDER", "").strip()
+    _deep_provider_env = os.environ.get("TRADINGAGENTS_DEEP_PROVIDER", "").strip()
+    _dual_provider = bool(_quick_provider_env and _deep_provider_env)
+
+    if _dual_provider:
+        console.print(
+            create_question_box(
+                "Step 6-8: Dual-Provider Mode",
+                f"Dual-provider detected from .env — skipping provider/model selection.\n"
+                f"  Quick model : {_quick_provider_env} / {os.environ.get('TRADINGAGENTS_QUICK_THINK_LLM', '?')}\n"
+                f"  Deep model  : {_deep_provider_env} / {os.environ.get('TRADINGAGENTS_DEEP_THINK_LLM', '?')}",
+            )
+        )
+        # Ensure API keys for both providers are available
+        ensure_api_key(_quick_provider_env)
+        if _deep_provider_env != _quick_provider_env:
+            ensure_api_key(_deep_provider_env)
+        # Return a minimal selection dict; run_analysis() will pick up the
+        # per-tier provider/model from DEFAULT_CONFIG (which already has the
+        # env-var overrides baked in by _apply_env_overrides).
+        return {
+            "ticker": selected_ticker,
+            "asset_type": asset_type.value,
+            "analysis_date": analysis_date,
+            "analysts": selected_analysts,
+            "research_depth": selected_research_depth,
+            "llm_provider": _quick_provider_env.lower(),
+            "backend_url": os.environ.get("TRADINGAGENTS_QUICK_BACKEND_URL"),
+            "shallow_thinker": os.environ.get("TRADINGAGENTS_QUICK_THINK_LLM", ""),
+            "deep_thinker": os.environ.get("TRADINGAGENTS_DEEP_THINK_LLM", ""),
+            "google_thinking_level": None,
+            "openai_reasoning_effort": None,
+            "anthropic_effort": None,
+            "output_language": output_language,
+            "_dual_provider": True,
+        }
+
     # Step 6: LLM Provider
     console.print(
         create_question_box(
@@ -982,16 +1023,26 @@ def run_analysis(checkpoint: bool = False):
     config = DEFAULT_CONFIG.copy()
     config["max_debate_rounds"] = selections["research_depth"]
     config["max_risk_discuss_rounds"] = selections["research_depth"]
-    config["quick_think_llm"] = selections["shallow_thinker"]
-    config["deep_think_llm"] = selections["deep_thinker"]
-    config["backend_url"] = selections["backend_url"]
-    config["llm_provider"] = selections["llm_provider"].lower()
-    # Provider-specific thinking configuration
-    config["google_thinking_level"] = selections.get("google_thinking_level")
-    config["openai_reasoning_effort"] = selections.get("openai_reasoning_effort")
-    config["anthropic_effort"] = selections.get("anthropic_effort")
     config["output_language"] = selections.get("output_language", "English")
     config["checkpoint_enabled"] = checkpoint
+
+    if selections.get("_dual_provider"):
+        # Dual-provider mode: DEFAULT_CONFIG already has the per-tier
+        # provider/model/URL overrides from env vars baked in. Only set
+        # the shared llm_provider (used as fallback) from quick tier.
+        config["llm_provider"] = selections["llm_provider"].lower()
+        # quick_think_llm, deep_think_llm, quick_provider, deep_provider,
+        # quick_backend_url, deep_backend_url are all already set via
+        # _apply_env_overrides() in DEFAULT_CONFIG.
+    else:
+        # Single-provider mode: CLI selections drive all settings.
+        config["quick_think_llm"] = selections["shallow_thinker"]
+        config["deep_think_llm"] = selections["deep_thinker"]
+        config["backend_url"] = selections["backend_url"]
+        config["llm_provider"] = selections["llm_provider"].lower()
+        config["google_thinking_level"] = selections.get("google_thinking_level")
+        config["openai_reasoning_effort"] = selections.get("openai_reasoning_effort")
+        config["anthropic_effort"] = selections.get("anthropic_effort")
 
     # Create stats callback handler for tracking LLM/tool calls
     stats_handler = StatsCallbackHandler()

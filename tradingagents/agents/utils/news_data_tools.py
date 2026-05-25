@@ -55,3 +55,23 @@ def get_insider_transactions(
         str: A report of insider transaction data
     """
     return route_to_vendor("get_insider_transactions", ticker)
+
+
+@tool
+def get_fund_flow(
+    ticker: Annotated[str, "Ticker symbol"],
+    look_back_days: Annotated[int, "Number of recent trading days to retrieve"] = 10,
+) -> str:
+    """
+    Retrieve fund flow (资金流向) data showing main force vs retail capital flows.
+    Critical for Chinese A-stocks — shows whether institutional money is flowing
+    in or out over recent trading days.
+
+    Args:
+        ticker (str): Ticker symbol of the company
+        look_back_days (int): Number of recent trading days (default 10)
+
+    Returns:
+        str: Fund flow data with main force / large / medium / small net inflows
+    """
+    return route_to_vendor("get_fund_flow", ticker, look_back_days)

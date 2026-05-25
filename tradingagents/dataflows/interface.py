@@ -31,6 +31,7 @@ from .akshare_data import (
     get_cashflow_akshare,
     get_income_statement_akshare,
     get_insider_transactions_akshare,
+    get_fund_flow_akshare,
 )
 from .akshare_news import get_news_akshare, get_global_news_akshare
 from .ticker_utils import is_a_stock_ticker
@@ -67,6 +68,12 @@ TOOLS_CATEGORIES = {
             "get_news",
             "get_global_news",
             "get_insider_transactions",
+        ]
+    },
+    "fund_flow": {
+        "description": "Capital flow / fund flow data",
+        "tools": [
+            "get_fund_flow"
         ]
     }
 }
@@ -128,13 +135,17 @@ VENDOR_METHODS = {
         "yfinance": get_yfinance_insider_transactions,
         "akshare": get_insider_transactions_akshare,
     },
+    # Fund flow (资金流向) — A-stock capital flow data
+    "get_fund_flow": {
+        "akshare": get_fund_flow_akshare,
+    },
 }
 
 # Methods whose first positional argument is a ticker symbol
 _TICKER_ARG_METHODS = frozenset({
     "get_stock_data", "get_indicators", "get_fundamentals",
     "get_balance_sheet", "get_cashflow", "get_income_statement",
-    "get_news", "get_insider_transactions",
+    "get_news", "get_insider_transactions", "get_fund_flow",
 })
 
 
