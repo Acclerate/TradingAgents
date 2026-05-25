@@ -27,6 +27,66 @@
 
 # TradingAgents：多智能体LLM金融交易框架
 
+## 分支特性：A股市场支持 (feature/a-stock)
+
+本分支为TradingAgents添加了对中国A股市场的完整支持，包括数据源、情绪分析和LLM提供商的本地化适配。
+
+### A股数据源
+
+| 数据类型 | 数据源 | 说明 |
+|---------|--------|------|
+| 行情数据 | AKShare (腾讯/东方财富/新浪) | 支持前复权/后复权日线数据，自动多源容错 |
+| 个股新闻 | 东方财富、新浪财经、同花顺 | 通过AKShare聚合多个财经媒体 |
+| 宏观新闻 | CCTV财经、东方财富沪深300、新浪财经 | 针对A股的宏观指标查询词 |
+| 情绪数据 | 东方财富股吧、雪球 | 替代美股的StockTwits和Reddit |
+
+### 股票代码识别
+
+系统自动识别A股代码格式（6位数字，如 `600519`、`000858`），并根据首位判断交易所：
+- `6` 开头 → 上海证券交易所 (`.SS`)
+- `0`/`3` 开头 → 深圳证券交易所 (`.SZ`)
+
+```python
+# A股代码示例
+_, decision = ta.propagate("600519", "2026-01-15")  # 贵州茅台
+_, decision = ta.propagate("000858", "2026-01-15")  # 五粮液
+```
+
+### 新增LLM提供商
+
+| 提供商 | 环境变量 | 说明 |
+|--------|----------|------|
+| SiliconFlow | `SILICONFLOW_API_KEY` | 国内推理平台，托管DeepSeek/Qwen等开源模型 |
+| 双提供者模式 | `TRADINGAGENTS_DEEP_PROVIDER` / `TRADINGAGENTS_QUICK_PROVIDER` | deep和quick模型可使用不同提供商 |
+
+### 配置示例
+
+```python
+config = DEFAULT_CONFIG.copy()
+# 使用AKShare作为A股数据源
+config["data_vendors"] = {
+    "core_stock_apis": "akshare",
+    "technical_indicators": "akshare",
+    "fundamental_data": "akshare",
+    "news_data": "akshare",
+}
+# 双提供者模式：deep用GLM，quick用SiliconFlow
+config["deep_provider"] = "glm-cn"
+config["quick_provider"] = "siliconflow"
+```
+
+### 新增环境变量
+
+```bash
+export SILICONFLOW_API_KEY=...     # SiliconFlow推理平台
+export TRADINGAGENTS_DEEP_PROVIDER=glm-cn        # deep模型提供商
+export TRADINGAGENTS_QUICK_PROVIDER=siliconflow   # quick模型提供商
+export TRADINGAGENTS_DEEP_BACKEND_URL=...        # deep模型自定义端点
+export TRADINGAGENTS_QUICK_BACKEND_URL=...       # quick模型自定义端点
+```
+
+---
+
 ## 最新动态
 - [2026-05] **TradingAgents v0.2.5** 发布，新增基于实证的情绪分析师、GPT-5.5等模型覆盖、Qwen/GLM/MiniMax双区域支持、`TRADINGAGENTS_*` 环境变量配置及API密钥自动检测、远程Ollama支持、非美股Alpha基准测试，以及股票代码路径遍历安全加固。完整列表请参阅 [CHANGELOG.md](CHANGELOG.md)。
 - [2026-04] **TradingAgents v0.2.4** 发布，新增结构化输出智能体（研究经理、交易员、投资组合经理）、LangGraph检查点恢复、持久化决策日志、DeepSeek/Qwen/GLM/Azure提供商支持、Docker部署，以及Windows UTF-8编码修复。
@@ -69,7 +129,7 @@ TradingAgents是一个多智能体交易框架，模拟真实世界交易公司�
 
 ### 分析师团队
 - **基本面分析师**：评估公司财务和绩效指标，识别内在价值和潜在风险。
-- **情绪分析师**：聚合新闻标题、StockTwits和Reddit讨论，形成单一情绪读数，以衡量短期市场情绪。
+- **情绪分析师**：聚合新闻标题和社交媒体讨论，形成单一情绪读数，以衡量短期市场情绪。美股使用StockTwits和Reddit，A股使用东方财富股吧和雪球。
 - **新闻分析师**：监控全球新闻和宏观经济指标，解读事件对市场条件的影响。
 - **技术分析师**：利用技术指标（如MACD和RSI）检测交易模式并预测价格走势。
 
@@ -189,7 +249,7 @@ python -m cli.main     # 替代方案：直接从源码运行
 
 ### 实现细节
 
-我们使用LangGraph构建TradingAgents，确保灵活性和模块化。该框架支持多个LLM提供商：OpenAI、Google、Anthropic、xAI、DeepSeek、Qwen（阿里DashScope，国际和中国端点）、GLM（智谱）、MiniMax（全球+中国）、OpenRouter、用于本地模型的Ollama，以及用于企业的Azure OpenAI。
+我们使用LangGraph构建TradingAgents，确保灵活性和模块化。该框架支持多个LLM提供商：OpenAI、Google、Anthropic、xAI、DeepSeek、Qwen（阿里DashScope，国际和中国端点）、GLM（智谱）、MiniMax（全球+中国）、SiliconFlow、OpenRouter、用于本地模型的Ollama，以及用于企业的Azure OpenAI。
 
 ### Python使用
 
