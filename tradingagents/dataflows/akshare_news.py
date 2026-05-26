@@ -117,7 +117,7 @@ def _news_ths(code: str, limit: int = 10) -> list:
 def get_news_akshare(
     ticker: str, start_date: str, end_date: str
 ) -> str:
-    """Fetch stock-specific news from multiple sources (EM → Sina → THS)."""
+    """Fetch stock-specific news from multiple sources (EM → Sina → THS → 选股宝)."""
     code = normalize_a_stock_ticker(ticker)
 
     all_items = []
@@ -127,6 +127,15 @@ def get_news_akshare(
     all_items.extend(_news_sina(code))
     # Source 3: THS
     all_items.extend(_news_ths(code))
+    # Source 4: Xuangubao flash news (backup)
+    if len(all_items) < 5:
+        try:
+            from .direct_sources.xuangubao import get_xuangubao_flash_news
+            flash = get_xuangubao_flash_news(limit=10)
+            for item in flash[:5]:
+                all_items.append(("[选股宝]", f"Title: {item.get('title', '')}\n{item.get('summary', '')}"))
+        except Exception as exc:
+            logger.debug("Xuangubao backup news failed: %s", exc)
 
     if not all_items:
         return f"No news found for A-stock '{ticker}'"
@@ -221,6 +230,20 @@ def get_global_news_akshare(
                     all_items.append(f"[新浪财经] {ctime} - {title}")
         except Exception as exc:
             logger.debug("Sina macro news failed: %s", exc)
+
+    # --- Xuangubao flash news (backup) ---
+    if len(all_items) < limit:
+        try:
+            from .direct_sources.xuangubao import get_xuangubao_flash_news
+            flash = get_xuangubao_flash_news(limit=limit - len(all_items))
+            for item in flash[:limit - len(all_items)]:
+                title = item.get("title", "")
+                ts = item.get("created_at", 0)
+                ts_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M") if ts else ""
+                if title:
+                    all_items.append(f"[选股宝] {ts_str} - {title}")
+        except Exception as exc:
+            logger.debug("Xuangubao macro news failed: %s", exc)
 
     if not all_items:
         return f"No macro news available for A-stock market around {curr_date}"

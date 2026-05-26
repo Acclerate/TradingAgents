@@ -107,14 +107,25 @@ DEFAULT_CONFIG = _apply_env_overrides({
     # Data vendor configuration
     # Category-level configuration (default for all tools in category)
     "data_vendors": {
-        "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance, akshare
+        "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance, akshare, sina_direct
         "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance, akshare
         "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance, akshare
         "news_data": "yfinance",             # Options: alpha_vantage, yfinance, akshare
+        "hk_stock_data": "tencent_direct",   # Tencent Finance direct API
+        "futures_data": "sina_direct",       # Sina Finance direct API
+        "forex_data": "boc_direct",          # Bank of China forex rates
+        "sector_flow": "eastmoney_direct",   # East Money sector capital flow
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
+    },
+    # Direct source settings (anti-scraping and network)
+    "direct_source_settings": {
+        "request_timeout": 10,
+        "max_retries": 3,
+        "retry_delay_base": 1.0,
+        "rate_limit_per_second": 5,
     },
     # Benchmark for alpha calculation in the reflection layer.
     # ``benchmark_ticker`` (when set) overrides the suffix map for all

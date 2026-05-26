@@ -19,6 +19,10 @@ from tradingagents.agents.utils.news_data_tools import (
     get_global_news,
     get_fund_flow,
 )
+from tradingagents.agents.utils.futures_tools import get_futures_data
+from tradingagents.agents.utils.forex_tools import get_forex_data
+from tradingagents.agents.utils.sector_flow_tools import get_sector_flow
+from tradingagents.agents.utils.hk_stock_tools import get_hk_stock_data
 
 
 def get_language_instruction() -> str:

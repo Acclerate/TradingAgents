@@ -38,6 +38,10 @@ from tradingagents.agents.utils.agent_utils import (
     get_insider_transactions,
     get_global_news,
     get_fund_flow,
+    get_futures_data,
+    get_forex_data,
+    get_sector_flow,
+    get_hk_stock_data,
 )
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
@@ -172,6 +176,10 @@ class TradingAgentsGraph:
                     get_stock_data,
                     # Technical indicators
                     get_indicators,
+                    # HK stock data
+                    get_hk_stock_data,
+                    # Futures data
+                    get_futures_data,
                 ]
             ),
             "social": ToolNode(
@@ -188,6 +196,10 @@ class TradingAgentsGraph:
                     get_insider_transactions,
                     # Fund flow (资金流向) — capital flow analysis
                     get_fund_flow,
+                    # Sector capital flow (板块资金流向)
+                    get_sector_flow,
+                    # Forex data (外汇牌价) — macro context
+                    get_forex_data,
                 ]
             ),
             "fundamentals": ToolNode(

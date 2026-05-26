@@ -125,7 +125,8 @@ def get_stock_data_akshare(
 ) -> str:
     """Fetch OHLCV data for an A-stock via AKShare (forward-adjusted).
 
-    Tries Tencent endpoint first (robust), falls back to East Money.
+    Tries Tencent endpoint first (robust), falls back to East Money,
+    then Sina AKShare, then Sohu direct source.
     """
     code = normalize_a_stock_ticker(symbol)
     s = start_date.replace("-", "")
@@ -141,6 +142,14 @@ def get_stock_data_akshare(
         except Exception as exc:
             errors.append(f"{fetcher.__name__}: {exc}")
             continue
+
+    if df is None or df.empty:
+        # 4th fallback: Sohu direct source
+        try:
+            from .direct_sources.sohu_history import sohu_get_hist_data
+            df = sohu_get_hist_data(code, s, e)
+        except Exception as sohu_exc:
+            errors.append(f"sohu_direct: {sohu_exc}")
 
     if df is None or df.empty:
         err_detail = "; ".join(errors) if errors else "empty result"

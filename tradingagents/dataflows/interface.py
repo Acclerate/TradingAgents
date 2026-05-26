@@ -36,6 +36,12 @@ from .akshare_data import (
 from .akshare_news import get_news_akshare, get_global_news_akshare
 from .ticker_utils import is_a_stock_ticker
 
+# Direct source imports (backup vendors bypassing AKShare/yfinance)
+from .direct_sources.sina_stock import get_stock_data_sina, get_futures_data_sina
+from .direct_sources.tencent_hk import get_hk_stock_data_tencent
+from .direct_sources.eastmoney_sector import get_sector_capital_flow
+from .direct_sources.boc_forex import get_forex_data_boc
+
 # Configuration and routing logic
 from .config import get_config
 
@@ -75,6 +81,30 @@ TOOLS_CATEGORIES = {
         "tools": [
             "get_fund_flow"
         ]
+    },
+    "hk_stock_data": {
+        "description": "Hong Kong stock price data",
+        "tools": [
+            "get_hk_stock_data"
+        ]
+    },
+    "futures_data": {
+        "description": "Futures price data (domestic and international)",
+        "tools": [
+            "get_futures_data"
+        ]
+    },
+    "forex_data": {
+        "description": "Foreign exchange rates",
+        "tools": [
+            "get_forex_data"
+        ]
+    },
+    "sector_flow": {
+        "description": "Sector-level capital flow (industry/concept/region)",
+        "tools": [
+            "get_sector_flow"
+        ]
     }
 }
 
@@ -82,6 +112,10 @@ VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
     "akshare",
+    "sina_direct",
+    "tencent_direct",
+    "eastmoney_direct",
+    "boc_direct",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -91,6 +125,7 @@ VENDOR_METHODS = {
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
         "akshare": get_stock_data_akshare,
+        "sina_direct": get_stock_data_sina,
     },
     # technical_indicators
     "get_indicators": {
@@ -139,6 +174,22 @@ VENDOR_METHODS = {
     "get_fund_flow": {
         "akshare": get_fund_flow_akshare,
     },
+    # HK stock data — Tencent Finance direct
+    "get_hk_stock_data": {
+        "tencent_direct": get_hk_stock_data_tencent,
+    },
+    # Futures data — Sina Finance direct
+    "get_futures_data": {
+        "sina_direct": get_futures_data_sina,
+    },
+    # Forex data — Bank of China
+    "get_forex_data": {
+        "boc_direct": get_forex_data_boc,
+    },
+    # Sector capital flow — East Money direct
+    "get_sector_flow": {
+        "eastmoney_direct": get_sector_capital_flow,
+    },
 }
 
 # Methods whose first positional argument is a ticker symbol
@@ -146,6 +197,7 @@ _TICKER_ARG_METHODS = frozenset({
     "get_stock_data", "get_indicators", "get_fundamentals",
     "get_balance_sheet", "get_cashflow", "get_income_statement",
     "get_news", "get_insider_transactions", "get_fund_flow",
+    "get_hk_stock_data", "get_futures_data",
 })
 
 
