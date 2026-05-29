@@ -1,4 +1,7 @@
+import logging
 from typing import Annotated
+
+logger = logging.getLogger(__name__)
 
 # Import from vendor-specific modules
 from .y_finance import (
@@ -23,6 +26,7 @@ from .alpha_vantage import (
     get_global_news as get_alpha_vantage_global_news,
 )
 from .alpha_vantage_common import AlphaVantageRateLimitError
+from yfinance.exceptions import YFRateLimitError
 from .akshare_data import (
     get_stock_data_akshare,
     get_indicators_akshare,
@@ -263,6 +267,7 @@ def route_to_vendor(method: str, *args, **kwargs):
         if vendor not in fallback_vendors:
             fallback_vendors.append(vendor)
 
+    last_error = None
     for vendor in fallback_vendors:
         if vendor not in VENDOR_METHODS[method]:
             continue
@@ -272,7 +277,15 @@ def route_to_vendor(method: str, *args, **kwargs):
 
         try:
             return impl_func(*args, **kwargs)
-        except AlphaVantageRateLimitError:
-            continue  # Only rate limits trigger fallback
+        except (AlphaVantageRateLimitError, YFRateLimitError) as e:
+            logger.warning(f"Rate limited by {vendor}, trying next vendor for '{method}'")
+            last_error = e
+            continue
+        except Exception as e:
+            logger.warning(f"Vendor '{vendor}' failed for '{method}': {e}")
+            last_error = e
+            continue
 
+    if last_error:
+        raise last_error
     raise RuntimeError(f"No available vendor for '{method}'")
