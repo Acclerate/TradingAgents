@@ -1,9 +1,12 @@
 """Capture final results for 003031 analysis."""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 import os, time, json
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
@@ -38,7 +41,7 @@ print(f"Analysis completed in {elapsed:.0f}s", flush=True)
 
 if final_state and isinstance(final_state, dict):
     # Save all reports
-    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_output")
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
     os.makedirs(out_dir, exist_ok=True)
 
     reports = {

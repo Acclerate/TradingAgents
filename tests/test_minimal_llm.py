@@ -1,8 +1,11 @@
 """Minimal test: just call the LLM with a simple market analyst prompt."""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 import os, time
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 from tradingagents.llm_clients.factory import create_llm_client
 

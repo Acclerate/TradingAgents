@@ -1,10 +1,13 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
 import os, time
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_output")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "test_output")
 os.makedirs(OUT, exist_ok=True)
 
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 
