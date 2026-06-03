@@ -29,6 +29,7 @@ from tradingagents.graph.analyst_execution import (
     sync_analyst_tracker_from_chunk,
 )
 from tradingagents.default_config import DEFAULT_CONFIG
+from tradingagents.dataflows.ticker_utils import normalize_input_ticker_with_display
 from cli.models import AnalystType
 from cli.utils import *
 from cli.announcements import fetch_announcements, display_announcements
@@ -510,7 +511,7 @@ def get_user_selections():
             "SPY",
         )
     )
-    selected_ticker = get_ticker()
+    selected_ticker, ticker_display = get_ticker()
     asset_type = detect_asset_type(selected_ticker)
     console.print(
         f"[green]Detected asset type:[/green] {asset_type.value}"
@@ -580,6 +581,7 @@ def get_user_selections():
         # env-var overrides baked in by _apply_env_overrides).
         return {
             "ticker": selected_ticker,
+            "ticker_display": ticker_display,
             "asset_type": asset_type.value,
             "analysis_date": analysis_date,
             "analysts": selected_analysts,
@@ -665,6 +667,7 @@ def get_user_selections():
 
     return {
         "ticker": selected_ticker,
+        "ticker_display": ticker_display,
         "asset_type": asset_type.value,
         "analysis_date": analysis_date,
         "analysts": selected_analysts,
@@ -700,7 +703,7 @@ def get_ticker():
         console.print("\n[red]No ticker symbol provided. Exiting...[/red]")
         raise typer.Exit(1)
 
-    return (ticker.strip() or "SPY").upper()
+    return normalize_input_ticker_with_display(ticker.strip() or "SPY")
 
 
 def get_analysis_date():
@@ -1071,7 +1074,7 @@ def run_analysis(checkpoint: bool = False):
     start_time = time.time()
 
     # Create result directory
-    results_dir = Path(config["results_dir"]) / selections["ticker"] / selections["analysis_date"]
+    results_dir = Path(config["results_dir"]) / selections["ticker_display"] / selections["analysis_date"]
     results_dir.mkdir(parents=True, exist_ok=True)
     report_dir = results_dir / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -1295,7 +1298,7 @@ def run_analysis(checkpoint: bool = False):
     save_choice = typer.prompt("Save report?", default="Y").strip().upper()
     if save_choice in ("Y", "YES", ""):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        default_path = Path.cwd() / "reports" / f"{selections['ticker']}_{timestamp}"
+        default_path = Path.cwd() / "reports" / f"{selections['ticker_display']}_{timestamp}"
         save_path_str = typer.prompt(
             "Save path (press Enter for default)",
             default=str(default_path)

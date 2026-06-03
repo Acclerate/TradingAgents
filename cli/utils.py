@@ -7,6 +7,7 @@ from dotenv import find_dotenv, set_key
 from rich.console import Console
 
 from cli.models import AnalystType, AssetType
+from tradingagents.dataflows.ticker_utils import normalize_input_ticker
 from tradingagents.llm_clients.api_key_env import get_api_key_env
 from tradingagents.llm_clients.model_catalog import get_model_options
 
@@ -41,12 +42,7 @@ def get_ticker() -> str:
         console.print("\n[red]No ticker symbol provided. Exiting...[/red]")
         exit(1)
 
-    return normalize_ticker_symbol(ticker)
-
-
-def normalize_ticker_symbol(ticker: str) -> str:
-    """Normalize ticker input while preserving exchange suffixes."""
-    return ticker.strip().upper()
+    return normalize_input_ticker(ticker)
 
 
 def detect_asset_type(ticker: str) -> AssetType:

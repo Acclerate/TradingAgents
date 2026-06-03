@@ -69,6 +69,12 @@ def fetch_reddit_posts(
     ``inter_request_delay`` keeps us under Reddit's public rate limit
     (~10 req/min per IP) even if the caller queries many subreddits.
     """
+    # Guard: non-ASCII tickers (e.g. Chinese aliases) won't match anything on
+    # English-language subreddits; skip the network calls entirely.
+    if not ticker.isascii():
+        logger.warning("Reddit fetch skipped for non-ASCII ticker: %s", ticker)
+        return f"<reddit unavailable: non-ASCII ticker '{ticker}'>"
+
     blocks = []
     total_posts = 0
     for i, sub in enumerate(subreddits):

@@ -161,6 +161,7 @@ MODEL_OPTIONS: ProviderModeOptions = {
             ("Custom model ID", "custom"),
         ],
         "deep": [
+            ("DeepSeek-V4-Pro - Flagship, cost-efficient", "deepseek-ai/DeepSeek-V4-Pro"),
             ("DeepSeek-V4-Flash - Fast, cost-efficient", "deepseek-ai/DeepSeek-V4-Flash"),
             ("DeepSeek-R1-0528 - Reasoning model", "deepseek-ai/DeepSeek-R1-0528"),
             ("Qwen3-235B-A22B - Large MoE", "Qwen/Qwen3-235B-A22B"),

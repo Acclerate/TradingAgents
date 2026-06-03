@@ -35,6 +35,11 @@ def fetch_stocktwits_messages(ticker: str, limit: int = 30, timeout: float = 10.
     symbol has no messages, or the response shape is unexpected — the
     caller never has to special-case None or exceptions.
     """
+    # Guard: non-ASCII tickers (e.g. Chinese aliases) cannot be embedded in a
+    # URL path segment without percent-encoding, which StockTwits won't resolve.
+    if not ticker.isascii():
+        logger.warning("StockTwits does not support non-ASCII ticker: %s", ticker)
+        return f"<stocktwits unavailable: non-ASCII ticker '{ticker}'>"
     url = _API.format(ticker=ticker.upper())
     req = Request(url, headers={"User-Agent": _UA, "Accept": "application/json"})
     try:

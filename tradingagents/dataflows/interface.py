@@ -38,7 +38,7 @@ from .akshare_data import (
     get_fund_flow_akshare,
 )
 from .akshare_news import get_news_akshare, get_global_news_akshare
-from .ticker_utils import is_a_stock_ticker
+from .ticker_utils import should_use_akshare_for_ticker
 
 # Direct source imports (backup vendors bypassing AKShare/yfinance)
 from .direct_sources.sina_stock import get_stock_data_sina, get_futures_data_sina
@@ -248,7 +248,7 @@ def route_to_vendor(method: str, *args, **kwargs):
     # Auto-detect A-stock tickers and force akshare vendor
     if method in _TICKER_ARG_METHODS:
         ticker = _extract_ticker(method, args, kwargs)
-        if is_a_stock_ticker(ticker):
+        if should_use_akshare_for_ticker(ticker):
             vendor_config = "akshare"
         else:
             vendor_config = get_vendor(category, method)
